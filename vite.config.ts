@@ -9,6 +9,7 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 56789,
+    allowedHosts: [".monkeycode-ai.online"],
   },
   resolve: {
     alias: {
