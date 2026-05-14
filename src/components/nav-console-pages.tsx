@@ -1,9 +1,7 @@
 import { Link, useLocation } from "react-router-dom"
-import { PlusIcon } from "lucide-react"
 
 import {
   SidebarGroup,
-  SidebarMenuAction,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -12,11 +10,6 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 export function NavConsolePages({
   pages,
@@ -59,25 +52,6 @@ export function NavConsolePages({
                 {item.icon}
                 <span>{item.name}</span>
               </SidebarMenuButton>
-              {item.url === "/knowledge-base" ? (
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <SidebarMenuAction
-                        aria-label="创建知识库"
-                        className="text-sidebar-foreground/50 opacity-100 peer-hover/menu-button:text-sidebar-foreground/50 hover:text-sidebar-accent-foreground"
-                        onClick={(event) => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                        }}
-                      />
-                    }
-                  >
-                    <PlusIcon />
-                  </TooltipTrigger>
-                  <TooltipContent side="right">创建知识库</TooltipContent>
-                </Tooltip>
-              ) : null}
               {item.children?.length ? (
                 <SidebarMenuSub>
                   {item.children.map((child) => (

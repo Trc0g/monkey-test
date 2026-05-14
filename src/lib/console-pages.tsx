@@ -1,9 +1,7 @@
 import {
-  BookOpenTextIcon,
-  BookTextIcon,
-  ChartNoAxesColumnIncreasingIcon,
-  KeyRoundIcon,
-  PlugZapIcon,
+  ActivityIcon,
+  BarChart3Icon,
+  ServerIcon,
 } from "lucide-react"
 
 type ConsoleChildPage = {
@@ -20,51 +18,23 @@ type ConsolePage = {
 
 export const consolePages: ConsolePage[] = [
   {
-    path: "/access-guide",
-    title: "接入指南",
-    icon: <BookOpenTextIcon />,
+    path: "/analytics",
+    title: "统计分析",
+    icon: <BarChart3Icon />,
   },
   {
-    path: "/knowledge-base",
-    title: "知识库",
-    icon: <BookTextIcon />,
-    children: [
-      {
-        path: "/knowledge-base/1",
-        title: "知识库 1",
-      },
-      {
-        path: "/knowledge-base/2",
-        title: "知识库 2",
-      },
-      {
-        path: "/knowledge-base/3",
-        title: "知识库 3",
-      },
-    ],
+    path: "/mcp-services",
+    title: "服务管理",
+    icon: <ServerIcon />,
   },
   {
-    path: "/api-keys",
-    title: "密钥管理",
-    icon: <KeyRoundIcon />,
-  },
-  {
-    path: "/developer-access",
-    title: "快速集成",
-    icon: <PlugZapIcon />,
-  },
-  {
-    path: "/usage-monitoring",
-    title: "用量监控",
-    icon: <ChartNoAxesColumnIncreasingIcon />,
+    path: "/logs",
+    title: "日志记录",
+    icon: <ActivityIcon />,
   },
 ] as const
 
 export const defaultConsolePage = consolePages[0].path
-
-export const defaultKnowledgeBasePage =
-  consolePages.find((page) => page.path === "/knowledge-base")?.children?.[0]
-    ?.path ?? defaultConsolePage
 
 export function getConsolePage(pathname: string) {
   for (const page of consolePages) {
