@@ -2,15 +2,14 @@ import * as React from "react"
 import { Navigate, useParams } from "react-router-dom"
 import {
   AlertCircleIcon,
-  CheckIcon,
   CheckCircle2Icon,
   CopyIcon,
   EyeIcon,
-  KeyRoundIcon,
   LinkIcon,
   MoreHorizontalIcon,
+  PencilIcon,
   PlusIcon,
-  TerminalSquareIcon,
+  PlayIcon,
   UploadIcon,
 } from "lucide-react"
 
@@ -24,7 +23,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
 import {
   Dialog,
   DialogContent,
@@ -54,14 +52,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { defaultConsolePage } from "@/lib/console-pages"
 import {
@@ -540,10 +530,7 @@ function McpServiceDetailContent({ service }: { service: McpService }) {
                 <Button onClick={() => setEditStep(1)} variant="outline">
                   返回上一步
                 </Button>
-                <Button onClick={saveEditDialog}>
-                  <CheckIcon data-icon="inline-start" />
-                  保存修改
-                </Button>
+                <Button onClick={saveEditDialog}>保存修改</Button>
               </>
             )}
           </DialogFooter>
@@ -553,71 +540,51 @@ function McpServiceDetailContent({ service }: { service: McpService }) {
       <Tabs className="gap-3" defaultValue="tools">
         <TabsList>
           <TabsTrigger value="tools">工具列表</TabsTrigger>
-          <TabsTrigger value="access">接入配置</TabsTrigger>
+          <TabsTrigger value="access">快速接入</TabsTrigger>
         </TabsList>
         <TabsContent value="tools">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-3">
               <CardTitle>工具列表</CardTitle>
-              <CardDescription>
-                由 OpenAPI paths 和 operations 生成的 MCP tools
-              </CardDescription>
+              <Badge variant="secondary">{detailTools.length} 个工具</Badge>
             </CardHeader>
             <CardContent>
-              <div className="overflow-hidden rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>工具名</TableHead>
-                      <TableHead>方法</TableHead>
-                      <TableHead>路径</TableHead>
-                      <TableHead>说明</TableHead>
-                      <TableHead>状态</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {detailTools.map((tool) => (
-                      <TableRow key={tool.name}>
-                        <TableCell className="font-mono text-xs">
+              <div className="grid gap-3">
+                {detailTools.map((tool) => (
+                  <div
+                    className="rounded-xl border bg-background p-4 shadow-xs"
+                    key={tool.name}
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="font-mono text-sm font-semibold">
                           {tool.name}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{tool.method}</Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {tool.path}
-                        </TableCell>
-                        <TableCell>{tool.description}</TableCell>
-                        <TableCell>
-                          <Badge variant={tool.enabled ? "default" : "secondary"}>
-                            {tool.enabled ? "启用" : "未启用"}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Button aria-label="在线测试" size="icon-sm" variant="outline">
+                          <PlayIcon className="size-3.5" />
+                        </Button>
+                        <Button aria-label="编辑" size="icon-sm" variant="outline">
+                          <PencilIcon className="size-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="mt-4 rounded-lg border bg-muted/30 p-3 text-sm leading-6 text-muted-foreground">
+                      {tool.description}
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="access">
-          <Card>
-            <CardHeader>
-              <CardTitle>接入配置</CardTitle>
-              <CardDescription>管理访问密钥，并复制通用客户端对接示例</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
+          <div className="flex flex-col gap-5">
               <section className="rounded-xl border bg-muted/20 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      <KeyRoundIcon className="size-4" />
-                      API Key
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      使用 API Key 保护 MCP 服务访问，可为不同客户端分配独立密钥。
-                    </p>
+                    <div className="text-sm font-semibold">API Key</div>
                   </div>
                   <Button size="sm">
                     <PlusIcon data-icon="inline-start" />
@@ -662,13 +629,7 @@ function McpServiceDetailContent({ service }: { service: McpService }) {
                 <Tabs className="gap-4" defaultValue="general">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <div className="flex items-center gap-2 text-sm font-semibold">
-                        <TerminalSquareIcon className="size-4" />
-                        接入使用
-                      </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        选择客户端类型，复制对应的 MCP 服务配置。
-                      </p>
+                      <div className="text-sm font-semibold">接入使用</div>
                     </div>
                     <TabsList className="w-fit max-w-full overflow-x-auto">
                       <TabsTrigger value="general">通用配置</TabsTrigger>
@@ -706,33 +667,7 @@ function McpServiceDetailContent({ service }: { service: McpService }) {
                 </Tabs>
               </section>
 
-              <Separator />
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <InfoItem label="文档来源" value={sourceTypeLabel(service.sourceType)} />
-                <InfoItem label="传输协议" value={service.transport} />
-                <InfoItem label="更新时间" value={service.updatedAt} />
-                <InfoItem label="工具命名" value={service.namingStrategy} />
-                <InfoItem label="Schema 校验" value={service.schemaValidation} />
-              </div>
-              {service.warnings.length ? (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                  <div className="flex items-center gap-2 text-sm font-medium text-destructive">
-                    <AlertCircleIcon />
-                    需要处理
-                  </div>
-                  <ul className="mt-2 flex list-disc flex-col gap-1 pl-4 text-sm text-muted-foreground">
-                    {service.warnings.map((warning) => (
-                      <li key={warning}>{warning}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                  当前接入配置没有阻塞项。
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </main>
@@ -815,16 +750,6 @@ function TimeInfoItem({
       </div>
     </div>
   )
-}
-
-function sourceTypeLabel(sourceType: "url" | "upload" | "repository") {
-  const labels = {
-    url: "远程 URL",
-    upload: "本地上传",
-    repository: "代码仓库",
-  }
-
-  return labels[sourceType]
 }
 
 function mcpClientExample(name: string, endpoint: string) {

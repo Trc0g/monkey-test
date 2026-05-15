@@ -2,7 +2,6 @@ import * as React from "react"
 import { Link } from "react-router-dom"
 import {
   AlertCircleIcon,
-  CheckIcon,
   CheckCircle2Icon,
   ChevronRightIcon,
   LinkIcon,
@@ -600,10 +599,7 @@ function CreateServiceDialog() {
               <Button onClick={() => setStep(1)} variant="outline">
                 返回上一步
               </Button>
-              <Button>
-                <CheckIcon data-icon="inline-start" />
-                创建服务
-              </Button>
+              <Button>创建服务</Button>
             </>
           )}
         </DialogFooter>
