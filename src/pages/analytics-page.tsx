@@ -106,13 +106,6 @@ const queueItems = [
 export default function AnalyticsPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold tracking-tight">统计分析</h1>
-        <p className="text-sm text-muted-foreground">
-          汇总 OpenAPI 转 MCP 的转换规模、服务运行状态和近期处理趋势。
-        </p>
-      </div>
-
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map((item) => (
           <Card key={item.title} size="sm">

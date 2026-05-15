@@ -73,10 +73,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             name: page.title,
             url: page.path,
             icon: page.icon,
-            children: page.children?.map((child) => ({
-              name: child.title,
-              url: child.path,
-            })),
+            children: page.children
+              ?.filter((child) => !child.hidden)
+              .map((child) => ({
+                name: child.title,
+                url: child.path,
+              })),
           }))}
         />
       </SidebarContent>

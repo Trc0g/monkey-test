@@ -1,13 +1,17 @@
-import { Link, Navigate, useParams } from "react-router-dom"
+import * as React from "react"
+import { Navigate, useParams } from "react-router-dom"
 import {
   AlertCircleIcon,
-  ArrowLeftIcon,
+  CheckIcon,
   CheckCircle2Icon,
   CopyIcon,
-  FileJsonIcon,
-  RefreshCwIcon,
-  ShieldCheckIcon,
-  WrenchIcon,
+  EyeIcon,
+  KeyRoundIcon,
+  LinkIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  TerminalSquareIcon,
+  UploadIcon,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +26,35 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Table,
   TableBody,
   TableCell,
@@ -29,9 +62,64 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { defaultConsolePage } from "@/lib/console-pages"
-import { getMcpService, type ServiceStatus } from "@/lib/mcp-services"
+import {
+  getMcpService,
+  type McpService,
+  type ServiceStatus,
+} from "@/lib/mcp-services"
 import { cn } from "@/lib/utils"
+
+type EditableService = {
+  description: string
+  auth: "API Key" | "公开访问"
+  baseUrl: string
+  apiKey: string
+  source: string
+  sourceMode: "url" | "file"
+}
+
+type EditableTool = McpService["tools"][number]
+
+type ParsedTool = {
+  id: string
+  method: EditableTool["method"]
+  name: string
+  path: string
+}
+
+const parsedTools: ParsedTool[] = [
+  { id: "listPets", method: "GET", name: "listPets", path: "/pets" },
+  { id: "createPet", method: "POST", name: "createPet", path: "/pets" },
+  { id: "getPetById", method: "GET", name: "getPetById", path: "/pets/{petId}" },
+  { id: "updatePet", method: "PUT", name: "updatePet", path: "/pets/{petId}" },
+  { id: "deletePet", method: "DELETE", name: "deletePet", path: "/pets/{petId}" },
+  { id: "listOrders", method: "GET", name: "listOrders", path: "/orders" },
+  { id: "createOrder", method: "POST", name: "createOrder", path: "/orders" },
+  { id: "getOrderById", method: "GET", name: "getOrderById", path: "/orders/{orderId}" },
+  { id: "updateOrderStatus", method: "PATCH", name: "updateOrderStatus", path: "/orders/{orderId}/status" },
+  { id: "createRefund", method: "POST", name: "createRefund", path: "/orders/{orderId}/refunds" },
+]
+
+const methodBadgeClassName: Record<EditableTool["method"], string> = {
+  GET: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  POST: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+  PUT: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  PATCH: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  DELETE: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+}
+
+const MAX_SELECTED_TOOLS = 30
+
+const apiKeys = [
+  {
+    name: "默认密钥",
+    key: "mcp_sk_live_••••••••9f3a",
+    createdAt: "2026-05-13 09:20",
+    lastUsedAt: "2026-05-15 08:36",
+  },
+]
 
 const statusMeta: Record<
   ServiceStatus,
@@ -45,11 +133,6 @@ const statusMeta: Record<
     label: "在线",
     icon: CheckCircle2Icon,
     className: "bg-primary text-primary-foreground",
-  },
-  syncing: {
-    label: "同步中",
-    icon: RefreshCwIcon,
-    className: "bg-secondary text-secondary-foreground",
   },
   offline: {
     label: "离线",
@@ -66,213 +149,670 @@ export default function McpServiceDetailPage() {
     return <Navigate replace to={defaultConsolePage} />
   }
 
+  return <McpServiceDetailContent service={service} />
+}
+
+function McpServiceDetailContent({ service }: { service: McpService }) {
+  const [editOpen, setEditOpen] = React.useState(false)
+  const [editStep, setEditStep] = React.useState(2)
+  const [editableService, setEditableService] = React.useState<EditableService>({
+    description: service.description,
+    auth: service.auth,
+    baseUrl: service.baseUrl,
+    apiKey: "",
+    source: service.source,
+    sourceMode: service.sourceType === "url" ? "url" : "file",
+  })
+  const [draftService, setDraftService] = React.useState<EditableService>(editableService)
+  const [detailTools, setDetailTools] = React.useState<EditableTool[]>(service.tools)
+  const [selectedToolIds, setSelectedToolIds] = React.useState<string[]>(
+    service.tools.filter((tool) => tool.enabled).map((tool) => tool.name)
+  )
+
   const meta = statusMeta[service.status]
-  const enabledTools = service.tools.filter((tool) => tool.enabled).length
+  const apiConfigChanged =
+    draftService.baseUrl !== editableService.baseUrl ||
+    draftService.apiKey !== editableService.apiKey ||
+    draftService.source !== editableService.source ||
+    draftService.sourceMode !== editableService.sourceMode
+  const canContinueToConfig = selectedToolIds.length > 0
+
+  function openEditDialog() {
+    setDraftService(editableService)
+    setSelectedToolIds(detailTools.filter((tool) => tool.enabled).map((tool) => tool.name))
+    setEditStep(2)
+    setEditOpen(true)
+  }
+
+  function saveEditDialog() {
+    setEditableService(draftService)
+    if (apiConfigChanged) {
+      setDetailTools(
+        parsedTools.map((tool) => ({
+          name: tool.name,
+          method: tool.method,
+          path: tool.path,
+          description: `由 ${tool.method} ${tool.path} 重新解析生成。`,
+          enabled: selectedToolIds.includes(tool.id),
+        }))
+      )
+    }
+    setEditOpen(false)
+  }
+
+  function toggleTool(toolId: string, checked: boolean) {
+    setSelectedToolIds((current) => {
+      if (checked) {
+        if (current.includes(toolId) || current.length >= MAX_SELECTED_TOOLS) {
+          return current
+        }
+
+        return [...current, toolId]
+      }
+
+      return current.filter((id) => id !== toolId)
+    })
+  }
+
+  function handleEditNext() {
+    setEditStep(2)
+  }
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex min-w-0 flex-col gap-3">
-          <Button className="w-fit" render={<Link to="/mcp-services" />} variant="ghost">
-            <ArrowLeftIcon data-icon="inline-start" />
-            返回服务管理
-          </Button>
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-semibold tracking-tight">
-                {service.name}
-              </h1>
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs",
-                  meta.className
-                )}
-              >
-                <meta.icon data-icon="inline-start" />
-                {meta.label}
-              </span>
-              <Badge variant="outline">{service.version}</Badge>
-            </div>
-            <p className="max-w-3xl text-sm text-muted-foreground">
-              {service.description}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline">
-            <RefreshCwIcon data-icon="inline-start" />
-            重新转换
-          </Button>
-          <Button>
-            <ShieldCheckIcon data-icon="inline-start" />
-            发布配置
-          </Button>
-        </div>
-      </div>
-
-      <section className="grid gap-3 md:grid-cols-4">
-        {[
-          ["工具总数", service.tools.length],
-          ["启用工具", enabledTools],
-          ["转换状态", meta.label],
-          ["最近检查", service.lastCheck],
-        ].map(([label, value]) => (
-          <div
-            className="flex flex-col gap-1 rounded-lg border bg-background px-4 py-3"
-            key={label}
-          >
-            <span className="text-sm text-muted-foreground">{label}</span>
-            <span className="text-xl font-semibold">{value}</span>
-          </div>
-        ))}
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle>连接信息</CardTitle>
-            <CardDescription>当前 MCP 服务对外连接与源 API 地址</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="grid gap-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <WrenchIcon />
-                MCP Endpoint
-              </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  aria-label="MCP endpoint"
-                  className="font-mono text-xs"
-                  readOnly
-                  value={service.endpoint}
-                />
-                <Button aria-label="复制 MCP endpoint" size="icon" variant="outline">
-                  <CopyIcon />
-                </Button>
-              </div>
-            </div>
-            <Separator />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <InfoItem label="OpenAPI 文档" value={service.source} />
-              <InfoItem label="文档来源" value={sourceTypeLabel(service.sourceType)} />
-              <InfoItem label="Base URL" value={service.baseUrl} />
-              <InfoItem label="鉴权方式" value={service.auth} />
-              <InfoItem label="传输协议" value={service.transport} />
-              <InfoItem label="更新时间" value={service.updatedAt} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>转换配置</CardTitle>
-            <CardDescription>OpenAPI 转 MCP 的生成规则</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <InfoBlock
-              icon={FileJsonIcon}
-              label="工具命名"
-              value={service.namingStrategy}
-            />
-            <InfoBlock
-              icon={ShieldCheckIcon}
-              label="Schema 校验"
-              value={service.schemaValidation}
-            />
-            {service.warnings.length ? (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
-                  <AlertCircleIcon />
-                  需要处理
-                </div>
-                <ul className="mt-2 flex list-disc flex-col gap-1 pl-4 text-sm text-muted-foreground">
-                  {service.warnings.map((warning) => (
-                    <li key={warning}>{warning}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                当前转换配置没有阻塞项。
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </section>
-
       <Card>
         <CardHeader>
-          <CardTitle>工具清单</CardTitle>
-          <CardDescription>
-            由 OpenAPI paths 和 operations 生成的 MCP tools
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>工具名</TableHead>
-                  <TableHead>方法</TableHead>
-                  <TableHead>路径</TableHead>
-                  <TableHead>说明</TableHead>
-                  <TableHead>状态</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {service.tools.map((tool) => (
-                  <TableRow key={tool.name}>
-                    <TableCell className="font-mono text-xs">
-                      {tool.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{tool.method}</Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {tool.path}
-                    </TableCell>
-                    <TableCell>{tool.description}</TableCell>
-                    <TableCell>
-                      <Badge variant={tool.enabled ? "default" : "secondary"}>
-                        {tool.enabled ? "启用" : "未启用"}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle className="text-xl">{service.name}</CardTitle>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                    meta.className
+                  )}
+                >
+                  <meta.icon className="size-3" data-icon="inline-start" />
+                  {meta.label}
+                </span>
+              </div>
+              <CardDescription className="mt-2 max-w-3xl">
+                {editableService.description}
+              </CardDescription>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button aria-label="服务操作" size="icon" variant="ghost">
+                    <MoreHorizontalIcon />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-28">
+                <DropdownMenuItem onClick={openEditDialog}>编辑</DropdownMenuItem>
+                <DropdownMenuItem variant="destructive">删除</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-2">
+          <InfoItem copyable label="MCP Server URL" value={service.endpoint} />
+          <InfoItem label="认证方式" value={editableService.auth} />
+          <InfoItem label="API Base URL" value={editableService.baseUrl} />
+          <TimeInfoItem createdAt={service.createdAt} updatedAt={service.updatedAt} />
         </CardContent>
       </Card>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+          <DialogHeader className="shrink-0 px-6 pt-6 pb-3">
+            <DialogTitle>编辑服务</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-6 py-3">
+          <div className="grid gap-2 md:grid-cols-2">
+            {[
+              { id: 1, title: "接口解析", description: "导入接口并选择工具" },
+              { id: 2, title: "配置服务", description: "配置 MCP 与 API 信息" },
+            ].map((item) => {
+              const active = editStep === item.id
+              const completed = editStep > item.id
+
+              return (
+                <div
+                  className={cn(
+                    "rounded-lg border px-3 py-2 transition-colors",
+                    active && "border-primary/40 bg-primary/5",
+                    completed && "border-primary/20 bg-primary/[0.03]",
+                    !active && !completed && "border-border/60 bg-background text-muted-foreground"
+                  )}
+                  key={item.id}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "inline-flex h-6 min-w-6 items-center justify-center rounded-full border text-[11px] font-medium",
+                        active && "border-primary/50 bg-primary text-primary-foreground",
+                        completed && "border-primary/30 bg-primary/10 text-primary",
+                        !active && !completed && "border-border/60 bg-muted/20 text-muted-foreground"
+                      )}
+                    >
+                      {item.id}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium">{item.title}</div>
+                      <div className="text-[11px] leading-4 text-muted-foreground">
+                        {item.description}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {editStep === 1 ? (
+            <FieldGroup className="gap-5">
+              <section className="rounded-lg border bg-muted/20 p-4">
+                <FieldGroup className="gap-4">
+                  <Field className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <FieldLabel htmlFor="edit-source-mode">来源</FieldLabel>
+                    <Select
+                      onValueChange={(value) => setDraftService((current) => ({
+                        ...current,
+                        sourceMode: value as EditableService["sourceMode"],
+                      }))}
+                      value={draftService.sourceMode}
+                    >
+                      <SelectTrigger className="w-full sm:w-44" id="edit-source-mode">
+                        <SelectValue placeholder="选择来源" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="url">
+                            <LinkIcon />
+                            从 URL 导入
+                          </SelectItem>
+                          <SelectItem value="file">
+                            <UploadIcon />
+                            从文件导入
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  {draftService.sourceMode === "url" ? (
+                    <div className="grid gap-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <FieldLabel className="shrink-0" htmlFor="edit-openapi-url">
+                          OpenAPI URL
+                        </FieldLabel>
+                        <Input
+                          className="h-9 w-full flex-1"
+                          id="edit-openapi-url"
+                          onChange={(event) => setDraftService((current) => ({
+                            ...current,
+                            source: event.target.value,
+                          }))}
+                          placeholder="https://api.example.com/openapi.json"
+                          value={draftService.source}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button type="button">导入工具</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3">
+                      <Field className="flex-1">
+                        <FieldLabel htmlFor="edit-openapi-file">OpenAPI 文件</FieldLabel>
+                        <Input id="edit-openapi-file" type="file" />
+                      </Field>
+                      <div className="flex justify-end">
+                        <Button type="button">导入工具</Button>
+                      </div>
+                    </div>
+                  )}
+                </FieldGroup>
+              </section>
+
+              <section className="rounded-lg border bg-muted/20 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium">选择工具</div>
+                  </div>
+                  <Badge variant="secondary">
+                    {selectedToolIds.length}/{MAX_SELECTED_TOOLS}
+                  </Badge>
+                </div>
+                <ScrollArea className="mt-4 h-[19rem] rounded-lg border bg-background">
+                  <div className="grid gap-3 p-3">
+                    {parsedTools.map((tool) => {
+                      const checked = selectedToolIds.includes(tool.id)
+                      const disabled = !checked && selectedToolIds.length >= MAX_SELECTED_TOOLS
+
+                      return (
+                        <label
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg border bg-background p-3",
+                            checked && "border-primary/40 bg-primary/5",
+                            disabled && "opacity-60"
+                          )}
+                          htmlFor={`edit-${tool.id}`}
+                          key={tool.id}
+                        >
+                          <Checkbox
+                            checked={checked}
+                            disabled={disabled}
+                            id={`edit-${tool.id}`}
+                            onCheckedChange={(nextChecked) =>
+                              toggleTool(tool.id, nextChecked)
+                            }
+                          />
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
+                            <span
+                              className={cn(
+                                "inline-flex shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium",
+                                methodBadgeClassName[tool.method]
+                              )}
+                            >
+                              {tool.method}
+                            </span>
+                            <span className="shrink-0 text-sm font-medium">{tool.name}</span>
+                            <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+                              {tool.path}
+                            </span>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </ScrollArea>
+              </section>
+            </FieldGroup>
+          ) : (
+            <div className="grid gap-4">
+              <section className="rounded-lg border bg-muted/20 p-4">
+                <div className="mb-4">
+                  <div className="text-sm font-medium">MCP 配置</div>
+                </div>
+                <FieldGroup className="gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="edit-service-name">MCP 服务名称</FieldLabel>
+                    <Input id="edit-service-name" readOnly value={service.name} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="edit-service-description">服务描述</FieldLabel>
+                    <Textarea
+                      id="edit-service-description"
+                      onChange={(event) => setDraftService((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))}
+                      placeholder="描述这个 MCP 服务的用途"
+                      rows={3}
+                      value={draftService.description}
+                    />
+                  </Field>
+                  <Field className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <FieldLabel htmlFor="edit-mcp-auth-mode">认证方式</FieldLabel>
+                    <Select
+                      onValueChange={(value) => setDraftService((current) => ({
+                        ...current,
+                        auth: value as EditableService["auth"],
+                      }))}
+                      value={draftService.auth}
+                    >
+                      <SelectTrigger
+                        className="w-full rounded-lg border-border/70 bg-background sm:w-44"
+                        id="edit-mcp-auth-mode"
+                      >
+                        <SelectValue placeholder="选择认证方式" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="API Key">API Key</SelectItem>
+                          <SelectItem value="公开访问">公开访问</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </FieldGroup>
+              </section>
+
+              <section className="rounded-lg border bg-muted/20 p-4">
+                <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <div className="text-sm font-medium">API 配置</div>
+                  <div className="text-xs text-muted-foreground">
+                    配置工具调用上游 API 时使用的地址与鉴权信息。
+                  </div>
+                </div>
+                <FieldGroup className="gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="edit-api-base-url">API Base URL</FieldLabel>
+                    <Input
+                      id="edit-api-base-url"
+                      onChange={(event) => setDraftService((current) => ({
+                        ...current,
+                        baseUrl: event.target.value,
+                      }))}
+                      placeholder="https://api.example.com"
+                      value={draftService.baseUrl}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="edit-api-key">API Key</FieldLabel>
+                    <Input
+                      id="edit-api-key"
+                      onChange={(event) => setDraftService((current) => ({
+                        ...current,
+                        apiKey: event.target.value,
+                      }))}
+                      placeholder="填写 API Key"
+                      type="password"
+                      value={draftService.apiKey}
+                    />
+                  </Field>
+                </FieldGroup>
+              </section>
+
+              <div className="rounded-lg border bg-background p-3 text-sm text-muted-foreground">
+                本次将保存 {apiConfigChanged ? selectedToolIds.length : detailTools.filter((tool) => tool.enabled).length} 个启用工具。
+              </div>
+
+            </div>
+          )}
+          </div>
+
+          <DialogFooter className="shrink-0 border-t px-6 py-3">
+            {editStep === 1 ? (
+              <>
+                <Button onClick={() => setEditOpen(false)} variant="outline">
+                  取消
+                </Button>
+                <Button disabled={!canContinueToConfig} onClick={handleEditNext}>
+                  下一步
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={() => setEditStep(1)} variant="outline">
+                  返回上一步
+                </Button>
+                <Button onClick={saveEditDialog}>
+                  <CheckIcon data-icon="inline-start" />
+                  保存修改
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Tabs className="gap-3" defaultValue="tools">
+        <TabsList>
+          <TabsTrigger value="tools">工具列表</TabsTrigger>
+          <TabsTrigger value="access">接入配置</TabsTrigger>
+        </TabsList>
+        <TabsContent value="tools">
+          <Card>
+            <CardHeader>
+              <CardTitle>工具列表</CardTitle>
+              <CardDescription>
+                由 OpenAPI paths 和 operations 生成的 MCP tools
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-hidden rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>工具名</TableHead>
+                      <TableHead>方法</TableHead>
+                      <TableHead>路径</TableHead>
+                      <TableHead>说明</TableHead>
+                      <TableHead>状态</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detailTools.map((tool) => (
+                      <TableRow key={tool.name}>
+                        <TableCell className="font-mono text-xs">
+                          {tool.name}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{tool.method}</Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {tool.path}
+                        </TableCell>
+                        <TableCell>{tool.description}</TableCell>
+                        <TableCell>
+                          <Badge variant={tool.enabled ? "default" : "secondary"}>
+                            {tool.enabled ? "启用" : "未启用"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="access">
+          <Card>
+            <CardHeader>
+              <CardTitle>接入配置</CardTitle>
+              <CardDescription>管理访问密钥，并复制通用客户端对接示例</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              <section className="rounded-xl border bg-muted/20 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <KeyRoundIcon className="size-4" />
+                      API Key
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      使用 API Key 保护 MCP 服务访问，可为不同客户端分配独立密钥。
+                    </p>
+                  </div>
+                  <Button size="sm">
+                    <PlusIcon data-icon="inline-start" />
+                    创建 Key
+                  </Button>
+                </div>
+
+                <div className="mt-4 grid gap-2">
+                  {apiKeys.map((apiKey) => (
+                    <div
+                      className="flex flex-col gap-3 rounded-lg border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
+                      key={apiKey.key}
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium">{apiKey.name}</div>
+                        <div className="mt-1 flex min-w-0 items-center gap-2">
+                          <code className="truncate rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
+                            {apiKey.key}
+                          </code>
+                          <span className="text-xs text-muted-foreground">
+                            {apiKey.createdAt} 创建，{apiKey.lastUsedAt}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button aria-label="复制 API Key" size="icon" variant="ghost">
+                          <CopyIcon className="size-3.5" />
+                        </Button>
+                        <Button aria-label="显示 API Key" size="icon" variant="ghost">
+                          <EyeIcon className="size-3.5" />
+                        </Button>
+                        <Button aria-label="更多 API Key 操作" size="icon" variant="ghost">
+                          <MoreHorizontalIcon className="size-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-xl border bg-muted/20 p-4">
+                <Tabs className="gap-4" defaultValue="general">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-semibold">
+                        <TerminalSquareIcon className="size-4" />
+                        接入使用
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        选择客户端类型，复制对应的 MCP 服务配置。
+                      </p>
+                    </div>
+                    <TabsList className="w-fit max-w-full overflow-x-auto">
+                      <TabsTrigger value="general">通用配置</TabsTrigger>
+                      <TabsTrigger value="claude">Claude</TabsTrigger>
+                      <TabsTrigger value="codex">Codex</TabsTrigger>
+                      <TabsTrigger value="cursor">Cursor</TabsTrigger>
+                      <TabsTrigger value="opencode">OpenCode</TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <TabsContent className="mt-0 grid gap-4" value="general">
+                    <EndpointItem label="Server URL" value={service.endpoint} />
+                    <ConfigBlock
+                      code={mcpClientExample(service.name, service.endpoint)}
+                      title="JSON 配置示例"
+                    />
+                    <ConfigBlock
+                      code={headerExample()}
+                      title="请求头 Key-Value 配置示例"
+                    />
+                  </TabsContent>
+                  {[
+                    ["claude", "Claude"],
+                    ["codex", "Codex"],
+                    ["cursor", "Cursor"],
+                    ["opencode", "OpenCode"],
+                  ].map(([value, label]) => (
+                    <TabsContent className="mt-0 grid gap-4" key={value} value={value}>
+                      <ConfigBlock
+                        code={mcpClientExample(service.name, service.endpoint)}
+                        title={`${label} 配置示例`}
+                      />
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </section>
+
+              <Separator />
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <InfoItem label="文档来源" value={sourceTypeLabel(service.sourceType)} />
+                <InfoItem label="传输协议" value={service.transport} />
+                <InfoItem label="更新时间" value={service.updatedAt} />
+                <InfoItem label="工具命名" value={service.namingStrategy} />
+                <InfoItem label="Schema 校验" value={service.schemaValidation} />
+              </div>
+              {service.warnings.length ? (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                    <AlertCircleIcon />
+                    需要处理
+                  </div>
+                  <ul className="mt-2 flex list-disc flex-col gap-1 pl-4 text-sm text-muted-foreground">
+                    {service.warnings.map((warning) => (
+                      <li key={warning}>{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+                  当前接入配置没有阻塞项。
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </main>
   )
 }
 
-function InfoItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 rounded-lg border bg-muted/30 p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 truncate text-sm font-medium">{value}</div>
-    </div>
-  )
-}
-
-function InfoBlock({
-  icon: Icon,
+function InfoItem({
+  copyable = false,
   label,
   value,
 }: {
-  icon: typeof FileJsonIcon
+  copyable?: boolean
   label: string
   value: string
 }) {
   return (
-    <div className="rounded-lg border bg-muted/30 p-3">
-      <div className="flex items-center gap-2 text-sm font-medium">
-        <Icon />
-        {label}
+    <div className="min-w-0 rounded-lg border bg-muted/30 p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 flex min-w-0 items-center gap-2">
+        <div className="min-w-0 flex-1 truncate text-sm font-medium">{value}</div>
+        {copyable ? (
+          <Button aria-label={`复制${label}`} className="size-7" size="icon" variant="ghost">
+            <CopyIcon className="size-3.5" />
+          </Button>
+        ) : null}
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">{value}</p>
+    </div>
+  )
+}
+
+function EndpointItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1.5">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="flex min-w-0 items-center gap-2 rounded-lg border bg-background px-3 py-2">
+        <div className="min-w-0 flex-1 truncate font-mono text-xs">{value}</div>
+        <Button aria-label={`复制${label}`} className="size-7" size="icon" variant="ghost">
+          <CopyIcon className="size-3.5" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function ConfigBlock({ code, title }: { code: string; title: string }) {
+  return (
+    <div className="grid gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs text-muted-foreground">{title}</div>
+        <Button size="sm" variant="ghost">
+          <CopyIcon data-icon="inline-start" />
+          复制
+        </Button>
+      </div>
+      <pre className="overflow-x-auto rounded-lg border bg-background p-4 text-xs leading-6 text-muted-foreground">
+        <code>{code}</code>
+      </pre>
+    </div>
+  )
+}
+
+function TimeInfoItem({
+  createdAt,
+  updatedAt,
+}: {
+  createdAt: string
+  updatedAt: string
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border bg-muted/30 p-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="min-w-0">
+          <div className="text-xs text-muted-foreground">创建时间</div>
+          <div className="mt-1 truncate text-sm font-medium">{createdAt}</div>
+        </div>
+        <div className="min-w-0">
+          <div className="text-xs text-muted-foreground">更新时间</div>
+          <div className="mt-1 truncate text-sm font-medium">{updatedAt}</div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -285,4 +825,33 @@ function sourceTypeLabel(sourceType: "url" | "upload" | "repository") {
   }
 
   return labels[sourceType]
+}
+
+function mcpClientExample(name: string, endpoint: string) {
+  return JSON.stringify(
+    {
+      mcpServers: {
+        [name]: {
+          type: "streamable-http",
+          url: endpoint,
+          headers: {
+            Authorization: "Bearer ${API_KEY}",
+          },
+        },
+      },
+    },
+    null,
+    2
+  )
+}
+
+function headerExample() {
+  return JSON.stringify(
+    {
+      key: "Authorization",
+      value: "Bearer ${API_KEY}",
+    },
+    null,
+    2
+  )
 }

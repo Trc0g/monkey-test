@@ -1,4 +1,4 @@
-export type ServiceStatus = "online" | "syncing" | "offline"
+export type ServiceStatus = "online" | "offline"
 
 export type McpTool = {
   name: string
@@ -21,7 +21,7 @@ export type McpService = {
   createdAt: string
   lastCheck: string
   baseUrl: string
-  auth: string
+  auth: "API Key" | "公开访问"
   namingStrategy: string
   transport: "SSE" | "Streamable HTTP"
   schemaValidation: string
@@ -43,7 +43,7 @@ export const mcpServices: McpService[] = [
     createdAt: "2026-05-02 09:42",
     lastCheck: "05-13 14:20",
     baseUrl: "https://petstore.example.com/api/v3",
-    auth: "Bearer Token",
+    auth: "API Key",
     namingStrategy: "operationId 优先，缺失时按 method + path 生成",
     transport: "SSE",
     schemaValidation: "通过，2 个 optional response schema 已跳过",
@@ -78,14 +78,14 @@ export const mcpServices: McpService[] = [
     description: "账单中心接口转换服务，包含账单查询、开票和付款状态同步。",
     source: "https://docs.example.com/openapi/billing.json",
     sourceType: "url",
-    status: "syncing",
+    status: "online",
     version: "v0.9.8",
     endpoint: "https://mcp.example.com/sse/billing",
     updatedAt: "2026-05-13 13:46",
     createdAt: "2026-05-06 16:05",
-    lastCheck: "同步中",
+    lastCheck: "05-13 13:50",
     baseUrl: "https://billing.example.com/openapi",
-    auth: "自定义 Header：X-API-Key",
+    auth: "API Key",
     namingStrategy: "自动补齐缺失 operationId",
     transport: "Streamable HTTP",
     schemaValidation: "校验中",
@@ -127,7 +127,7 @@ export const mcpServices: McpService[] = [
     createdAt: "2026-04-28 11:18",
     lastCheck: "05-12 18:12",
     baseUrl: "https://crm.example.com/admin-api",
-    auth: "未配置",
+    auth: "公开访问",
     namingStrategy: "按 tag 分组后生成工具名",
     transport: "SSE",
     schemaValidation: "失败，securitySchemes.oauth2 缺少 tokenUrl",
@@ -165,7 +165,7 @@ export const mcpServices: McpService[] = [
     createdAt: "2026-05-01 10:26",
     lastCheck: "05-13 13:58",
     baseUrl: "https://orders.example.com/api",
-    auth: "Bearer Token",
+    auth: "API Key",
     namingStrategy: "operationId 优先",
     transport: "Streamable HTTP",
     schemaValidation: "通过",

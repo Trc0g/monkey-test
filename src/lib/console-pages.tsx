@@ -7,6 +7,8 @@ import {
 type ConsoleChildPage = {
   path: string
   title: string
+  match?: (pathname: string) => boolean
+  hidden?: boolean
 }
 
 type ConsolePage = {
@@ -26,6 +28,14 @@ export const consolePages: ConsolePage[] = [
     path: "/mcp-services",
     title: "服务管理",
     icon: <ServerIcon />,
+    children: [
+      {
+        path: "/mcp-services",
+        title: "服务详情",
+        match: (pathname) => pathname.startsWith("/mcp-services/"),
+        hidden: true,
+      },
+    ],
   },
   {
     path: "/logs",
@@ -45,7 +55,9 @@ export function getConsolePage(pathname: string) {
       }
     }
 
-    const child = page.children?.find((item) => item.path === pathname)
+    const child = page.children?.find((item) => (
+      item.match ? item.match(pathname) : item.path === pathname
+    ))
     if (child) {
       return {
         page: child,

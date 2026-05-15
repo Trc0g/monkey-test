@@ -112,13 +112,7 @@ const levelMeta = {
 export default function LogsPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold tracking-tight">日志记录</h1>
-          <p className="text-sm text-muted-foreground">
-            查看转换、部署、工具调用和校验阶段的事件日志。
-          </p>
-        </div>
+      <div className="flex justify-end">
         <Button variant="outline">
           <DownloadIcon data-icon="inline-start" />
           导出日志
