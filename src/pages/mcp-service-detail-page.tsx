@@ -106,8 +106,7 @@ const apiKeys = [
   {
     name: "默认密钥",
     key: "mcp_sk_live_••••••••9f3a",
-    createdAt: "2026-05-13 09:20",
-    lastUsedAt: "2026-05-15 08:36",
+    usageMeta: "21 天前创建，未使用过",
   },
 ]
 
@@ -248,7 +247,7 @@ function McpServiceDetailContent({ service }: { service: McpService }) {
         <CardContent className="grid gap-3 md:grid-cols-2">
           <InfoItem copyable label="MCP Server URL" value={service.endpoint} />
           <InfoItem label="认证方式" value={editableService.auth} />
-          <InfoItem label="API Base URL" value={editableService.baseUrl} />
+          <InfoItem copyable label="API Base URL" value={editableService.baseUrl} />
           <TimeInfoItem createdAt={service.createdAt} updatedAt={service.updatedAt} />
         </CardContent>
       </Card>
@@ -598,16 +597,14 @@ function McpServiceDetailContent({ service }: { service: McpService }) {
                       className="flex flex-col gap-3 rounded-lg border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
                       key={apiKey.key}
                     >
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium">{apiKey.name}</div>
-                        <div className="mt-1 flex min-w-0 items-center gap-2">
-                          <code className="truncate rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
-                            {apiKey.key}
-                          </code>
-                          <span className="text-xs text-muted-foreground">
-                            {apiKey.createdAt} 创建，{apiKey.lastUsedAt}
-                          </span>
-                        </div>
+                      <div className="grid min-w-0 flex-1 items-center gap-3 sm:grid-cols-[minmax(7rem,0.8fr)_minmax(14rem,1fr)_minmax(10rem,0.8fr)]">
+                        <div className="min-w-0 truncate text-sm font-medium">{apiKey.name}</div>
+                        <code className="min-w-0 truncate rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
+                          {apiKey.key}
+                        </code>
+                        <span className="min-w-0 truncate text-right text-xs text-muted-foreground sm:text-left lg:text-right">
+                          {apiKey.usageMeta}
+                        </span>
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
                         <Button aria-label="复制 API Key" size="icon" variant="ghost">
@@ -631,12 +628,13 @@ function McpServiceDetailContent({ service }: { service: McpService }) {
                     <div>
                       <div className="text-sm font-semibold">接入使用</div>
                     </div>
-                    <TabsList className="w-fit max-w-full overflow-x-auto">
+                    <TabsList className="h-auto w-fit max-w-full flex-wrap">
                       <TabsTrigger value="general">通用配置</TabsTrigger>
                       <TabsTrigger value="claude">Claude</TabsTrigger>
                       <TabsTrigger value="codex">Codex</TabsTrigger>
                       <TabsTrigger value="cursor">Cursor</TabsTrigger>
                       <TabsTrigger value="opencode">OpenCode</TabsTrigger>
+                      <TabsTrigger value="openclaw">openclaw</TabsTrigger>
                     </TabsList>
                   </div>
 
@@ -656,6 +654,7 @@ function McpServiceDetailContent({ service }: { service: McpService }) {
                     ["codex", "Codex"],
                     ["cursor", "Cursor"],
                     ["opencode", "OpenCode"],
+                    ["openclaw", "openclaw"],
                   ].map(([value, label]) => (
                     <TabsContent className="mt-0 grid gap-4" key={value} value={value}>
                       <ConfigBlock
@@ -686,7 +685,7 @@ function InfoItem({
   return (
     <div className="min-w-0 rounded-lg border bg-muted/30 p-3">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 flex min-w-0 items-center gap-2">
+      <div className="mt-1 flex min-h-7 min-w-0 items-center gap-2">
         <div className="min-w-0 flex-1 truncate text-sm font-medium">{value}</div>
         {copyable ? (
           <Button aria-label={`复制${label}`} className="size-7" size="icon" variant="ghost">
@@ -741,11 +740,11 @@ function TimeInfoItem({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="min-w-0">
           <div className="text-xs text-muted-foreground">创建时间</div>
-          <div className="mt-1 truncate text-sm font-medium">{createdAt}</div>
+          <div className="mt-1 flex min-h-7 items-center truncate text-sm font-medium">{createdAt}</div>
         </div>
         <div className="min-w-0">
           <div className="text-xs text-muted-foreground">更新时间</div>
-          <div className="mt-1 truncate text-sm font-medium">{updatedAt}</div>
+          <div className="mt-1 flex min-h-7 items-center truncate text-sm font-medium">{updatedAt}</div>
         </div>
       </div>
     </div>

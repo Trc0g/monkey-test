@@ -58,9 +58,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <AppWindowIcon className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">openapi2mcp</span>
+                <span className="truncate font-medium">OpenAPI 转 MCP</span>
                 <span className="truncate text-xs text-sidebar-foreground/70">
-                  OpenAPI 转 MCP
+                  长亭百智云
                 </span>
               </div>
             </SidebarMenuButton>

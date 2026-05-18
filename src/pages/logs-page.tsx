@@ -31,7 +31,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-const PAGE_SIZE = 20
+const DEFAULT_PAGE_SIZE = 20
+
+const pageSizeOptions = [10, 20, 50] as const
 
 const statusOptions = {
   "all-statuses": "全部状态",
@@ -144,17 +146,23 @@ const logs = Array.from({ length: 45 }, (_, index) => {
 
 export default function LogsPage() {
   const [page, setPage] = React.useState(1)
+  const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE)
   const [selectedLog, setSelectedLog] = React.useState<(typeof logs)[number] | null>(null)
   const [statusFilter, setStatusFilter] = React.useState<keyof typeof statusOptions>("all-statuses")
   const filteredLogs = logs.filter((log) => {
     return statusFilter === "all-statuses" || log.status === statusFilter
   })
-  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE))
-  const startIndex = (page - 1) * PAGE_SIZE
-  const paginatedLogs = filteredLogs.slice(startIndex, startIndex + PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize))
+  const startIndex = (page - 1) * pageSize
+  const paginatedLogs = filteredLogs.slice(startIndex, startIndex + pageSize)
 
   function changeStatusFilter(value: keyof typeof statusOptions) {
     setStatusFilter(value)
+    setPage(1)
+  }
+
+  function changePageSize(value: string) {
+    setPageSize(Number(value))
     setPage(1)
   }
 
@@ -230,7 +238,23 @@ export default function LogsPage() {
             </Table>
           </div>
           <div className="flex flex-col gap-3 border-t px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-            <div>20 条 / 页，共 {filteredLogs.length} 条</div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span>共 {filteredLogs.length} 条</span>
+              <Select onValueChange={changePageSize} value={String(pageSize)}>
+                <SelectTrigger className="h-8 w-28 bg-background px-2">
+                  <SelectValue>{pageSize} 条 / 页</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {pageSizeOptions.map((option) => (
+                      <SelectItem key={option} value={String(option)}>
+                        {option} 条 / 页
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center gap-1">
               <Button
                 disabled={page === 1}

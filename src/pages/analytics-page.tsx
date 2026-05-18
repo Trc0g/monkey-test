@@ -9,7 +9,6 @@ import {
   ActivityIcon,
   Clock3Icon,
   ServerIcon,
-  TriangleAlertIcon,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -77,7 +76,6 @@ const summaryCards = [
     title: "接入服务",
     value: "42",
     status: [
-      { label: "正常", value: "39", className: "text-[oklch(0.555_0.163_48.998)]" },
       { label: "异常", value: "3", className: "text-[oklch(0.577_0.245_27.325)]" },
     ],
     icon: ServerIcon,
@@ -85,12 +83,10 @@ const summaryCards = [
   {
     title: "今日工具调用",
     value: "1,980",
+    status: [
+      { label: "异常", value: "44", className: "text-[oklch(0.577_0.245_27.325)]" },
+    ],
     icon: ActivityIcon,
-  },
-  {
-    title: "今日调用异常",
-    value: "44",
-    icon: TriangleAlertIcon,
   },
   {
     title: "平均响应耗时",
@@ -102,7 +98,7 @@ const summaryCards = [
 export default function AnalyticsPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {summaryCards.map((item) => (
           <Card className="border-[oklch(0.555_0.163_48.998_/_0.18)]" key={item.title} size="sm">
             <CardHeader>
@@ -112,19 +108,24 @@ export default function AnalyticsPage() {
               </CardAction>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold tracking-tight">
-                {item.value}
-              </div>
-              {item.status ? (
-                <div className="mt-3 flex items-center gap-3 text-sm text-muted-foreground">
-                  {item.status.map((status) => (
-                    <span className="inline-flex items-center gap-1" key={status.label}>
-                      <span>{status.label}</span>
-                      <span className={status.className}>{status.value}</span>
-                    </span>
-                  ))}
+              <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
+                <div className="text-3xl font-semibold tracking-tight">
+                  {item.value}
                 </div>
-              ) : null}
+                {item.status ? (
+                  <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                    {item.status.map((status) => (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground"
+                        key={status.label}
+                      >
+                        <span>{status.label}</span>
+                        <span className={status.className}>{status.value}</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -216,7 +217,7 @@ function RankingCard({
               className="bg-[oklch(0.555_0.163_48.998_/_0.1)] text-[oklch(0.555_0.163_48.998)]"
               variant="secondary"
             >
-              {item.count}
+              {item.count} 次调用
             </Badge>
           </div>
         ))}

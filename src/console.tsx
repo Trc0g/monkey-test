@@ -48,7 +48,7 @@ export default function Console() {
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink render={<Link to={defaultConsolePage} />}>
-                    openapi2mcp
+                    OpenAPI 转 MCP
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
