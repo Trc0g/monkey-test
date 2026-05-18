@@ -1,6 +1,6 @@
-# 百智云应用前端模板
+# OpenAPI 转 MCP
 
-这是一个用于构建百智云应用前端的基础模板，内置控制台布局、左侧导航、面包屑、主题切换，以及一组可直接复用的 `shadcn/ui` 组件。
+这是长亭百智云中的 OpenAPI 转 MCP 控制台前端，用于管理 MCP 服务、查看调用统计、审计调用日志，并提供快速接入配置示例。
 
 ## 技术栈
 
@@ -15,6 +15,7 @@
 
 ```bash
 pnpm install
+
 pnpm dev
 ```
 
@@ -41,21 +42,23 @@ src/
     ui/                     # shadcn/ui 组件
   lib/
     console-pages.tsx       # 控制台路由与导航配置
+    mcp-services.ts         # MCP 服务演示数据
   pages/
-    access-guide-page.tsx
-    knowledge-base-page.tsx
-    api-keys-page.tsx
-    usage-monitoring-page.tsx
+    analytics-page.tsx              # 统计分析
+    logs-page.tsx                   # 调用日志
+    mcp-service-detail-page.tsx     # 服务详情与快速接入
+    mcp-services-page.tsx           # MCP 服务列表与创建流程
   App.tsx                   # 路由入口
   console.tsx               # 控制台壳层与面包屑
 ```
 
-## 模板说明
+## 功能说明
 
 - 左侧导航页面配置集中在 `src/lib/console-pages.tsx`。
-- 知识库二级页面共用 `src/pages/knowledge-base-page.tsx`，通过路由参数 `:id` 区分。
+- MCP 服务演示数据集中在 `src/lib/mcp-services.ts`。
 - 控制台整体布局在 `src/console.tsx`，包含面包屑、主题切换和内容出口。
-- 页面内容可基于 `src/pages/console-page-shell.tsx` 继续扩展。
+- 服务详情页提供 MCP Server URL、API Base URL、API Key、快速接入配置示例和工具列表。
+- 日志页支持状态筛选、日志详情查看、分页和每页条数配置。
 
 ## 添加 UI 组件
 
