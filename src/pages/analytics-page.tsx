@@ -2,15 +2,11 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Bar,
-  BarChart,
   XAxis,
   YAxis,
 } from "recharts"
 import {
   ActivityIcon,
-  ArrowUpRightIcon,
-  CheckCircle2Icon,
   Clock3Icon,
   ServerIcon,
   TriangleAlertIcon,
@@ -21,7 +17,6 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -31,76 +26,77 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
 
-const conversionTrend = [
-  { day: "05-07", success: 18, failed: 2 },
-  { day: "05-08", success: 24, failed: 1 },
-  { day: "05-09", success: 31, failed: 4 },
-  { day: "05-10", success: 28, failed: 3 },
-  { day: "05-11", success: 36, failed: 2 },
-  { day: "05-12", success: 42, failed: 5 },
-  { day: "05-13", success: 39, failed: 1 },
+const callTrend = [
+  { day: "05-07", success: 1240, failed: 36 },
+  { day: "05-08", success: 1386, failed: 42 },
+  { day: "05-09", success: 1528, failed: 61 },
+  { day: "05-10", success: 1462, failed: 48 },
+  { day: "05-11", success: 1715, failed: 39 },
+  { day: "05-12", success: 1842, failed: 74 },
+  { day: "05-13", success: 1936, failed: 44 },
 ]
 
-const toolDistribution = [
-  { type: "GET", count: 126 },
-  { type: "POST", count: 84 },
-  { type: "PUT", count: 29 },
-  { type: "DELETE", count: 13 },
-  { type: "PATCH", count: 18 },
+const toolUsage = [
+  { name: "listPets", meta: "服务：petstore-mcp", count: "2,860" },
+  { name: "createInvoice", meta: "服务：billing-api-mcp", count: "2,140" },
+  { name: "searchCustomers", meta: "服务：crm-admin-mcp", count: "1,680" },
+  { name: "getPetById", meta: "服务：petstore-mcp", count: "1,268" },
+  { name: "updateOrderStatus", meta: "服务：order-center-mcp", count: "842" },
 ]
 
-const conversionConfig = {
+const serviceUsage = [
+  { name: "petstore-mcp", meta: "18 个工具", count: "4,128" },
+  { name: "billing-api-mcp", meta: "24 个工具", count: "3,406" },
+  { name: "crm-admin-mcp", meta: "31 个工具", count: "2,219" },
+  { name: "order-center-mcp", meta: "16 个工具", count: "1,647" },
+  { name: "inventory-mcp", meta: "12 个工具", count: "936" },
+]
+
+const keyUsage = [
+  { name: "生产环境 Key", meta: "服务：billing-api-mcp", count: "3,012" },
+  { name: "默认密钥", meta: "服务：petstore-mcp", count: "2,786" },
+  { name: "测试环境 Key", meta: "服务：crm-admin-mcp", count: "1,936" },
+  { name: "演示客户端 Key", meta: "服务：petstore-mcp", count: "1,144" },
+  { name: "订单服务 Key", meta: "服务：order-center-mcp", count: "731" },
+]
+
+const callTrendConfig = {
   success: {
-    label: "成功转换",
-    color: "var(--color-chart-3)",
+    label: "成功调用",
+    color: "oklch(0.555 0.163 48.998)",
   },
   failed: {
-    label: "失败",
-    color: "var(--color-destructive)",
-  },
-} satisfies ChartConfig
-
-const methodConfig = {
-  count: {
-    label: "工具数量",
-    color: "var(--color-chart-4)",
+    label: "失败调用",
+    color: "oklch(0.577 0.245 27.325)",
   },
 } satisfies ChartConfig
 
 const summaryCards = [
   {
-    title: "OpenAPI 文档",
-    value: "128",
-    helper: "本周新增 18 个",
-    icon: ActivityIcon,
-  },
-  {
-    title: "MCP 服务",
+    title: "接入服务",
     value: "42",
-    helper: "31 个运行中",
+    status: [
+      { label: "正常", value: "39", className: "text-[oklch(0.555_0.163_48.998)]" },
+      { label: "异常", value: "3", className: "text-[oklch(0.577_0.245_27.325)]" },
+    ],
     icon: ServerIcon,
   },
   {
-    title: "转换成功率",
-    value: "96.8%",
-    helper: "较上周 +2.4%",
-    icon: CheckCircle2Icon,
+    title: "今日工具调用",
+    value: "1,980",
+    icon: ActivityIcon,
   },
   {
-    title: "平均转换耗时",
-    value: "4.2s",
-    helper: "P95 8.7s",
+    title: "今日调用异常",
+    value: "44",
+    icon: TriangleAlertIcon,
+  },
+  {
+    title: "平均响应耗时",
+    value: "284ms",
     icon: Clock3Icon,
   },
-]
-
-const queueItems = [
-  { name: "petstore-v3.yaml", status: "转换完成", value: 100 },
-  { name: "billing-openapi.json", status: "生成工具描述", value: 72 },
-  { name: "crm-admin.yaml", status: "等待校验", value: 38 },
 ]
 
 export default function AnalyticsPage() {
@@ -108,41 +104,51 @@ export default function AnalyticsPage() {
     <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map((item) => (
-          <Card key={item.title} size="sm">
+          <Card className="border-[oklch(0.555_0.163_48.998_/_0.18)]" key={item.title} size="sm">
             <CardHeader>
               <CardTitle>{item.title}</CardTitle>
               <CardAction>
-                <item.icon className="text-muted-foreground" />
+                <item.icon className="text-[oklch(0.555_0.163_48.998)]" />
               </CardAction>
-              <CardDescription>{item.helper}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-end gap-2">
-                <div className="text-3xl font-semibold tracking-tight">
-                  {item.value}
-                </div>
-                <Badge variant="secondary">
-                  <ArrowUpRightIcon data-icon="inline-start" />
-                  稳定
-                </Badge>
+              <div className="text-3xl font-semibold tracking-tight">
+                {item.value}
               </div>
+              {item.status ? (
+                <div className="mt-3 flex items-center gap-3 text-sm text-muted-foreground">
+                  {item.status.map((status) => (
+                    <span className="inline-flex items-center gap-1" key={status.label}>
+                      <span>{status.label}</span>
+                      <span className={status.className}>{status.value}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         ))}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(360px,1fr)]">
+      <section>
         <Card>
           <CardHeader>
-            <CardTitle>转换趋势</CardTitle>
-            <CardDescription>最近 7 天成功与失败任务数量</CardDescription>
+            <div className="flex items-center gap-2">
+              <CardTitle>调用趋势</CardTitle>
+              <Badge
+                className="w-fit bg-[oklch(0.555_0.163_48.998_/_0.1)] text-[oklch(0.555_0.163_48.998)]"
+                variant="secondary"
+              >
+                近 30 天
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
             <ChartContainer
-              className="h-[300px] w-full"
-              config={conversionConfig}
+              className="h-[280px] w-full"
+              config={callTrendConfig}
             >
-              <AreaChart data={conversionTrend}>
+              <AreaChart data={callTrend}>
                 <CartesianGrid vertical={false} />
                 <XAxis
                   axisLine={false}
@@ -154,106 +160,67 @@ export default function AnalyticsPage() {
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Area
                   dataKey="success"
-                  fill="var(--color-success)"
-                  fillOpacity={0.35}
-                  stroke="var(--color-success)"
+                  fill="oklch(0.555 0.163 48.998)"
+                  fillOpacity={0.3}
+                  stroke="oklch(0.555 0.163 48.998)"
                   type="monotone"
                 />
                 <Area
                   dataKey="failed"
-                  fill="var(--color-failed)"
+                  fill="oklch(0.577 0.245 27.325)"
                   fillOpacity={0.16}
-                  stroke="var(--color-failed)"
+                  stroke="oklch(0.577 0.245 27.325)"
                   type="monotone"
                 />
               </AreaChart>
             </ChartContainer>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>工具方法分布</CardTitle>
-            <CardDescription>按 OpenAPI operation method 统计</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer className="h-[300px] w-full" config={methodConfig}>
-              <BarChart data={toolDistribution}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  axisLine={false}
-                  dataKey="type"
-                  tickLine={false}
-                  tickMargin={10}
-                />
-                <YAxis axisLine={false} tickLine={false} width={32} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar
-                  dataKey="count"
-                  fill="var(--color-count)"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(360px,1fr)_minmax(0,1.6fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle>转换队列</CardTitle>
-            <CardDescription>当前待处理和进行中的 OpenAPI 文档</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {queueItems.map((item) => (
-              <div key={item.name} className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="truncate font-medium">{item.name}</span>
-                  <span className="shrink-0 text-sm text-muted-foreground">
-                    {item.status}
-                  </span>
-                </div>
-                <Progress value={item.value} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>质量概览</CardTitle>
-            <CardDescription>转换前校验与 MCP 工具生成质量</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
-            <div className="flex flex-col gap-2">
-              <Badge variant="outline">Schema 校验</Badge>
-              <div className="text-2xl font-semibold">98.4%</div>
-              <p className="text-sm text-muted-foreground">
-                参数类型、必填项和响应结构可被正常解析。
-              </p>
-            </div>
-            <Separator className="hidden md:block" orientation="vertical" />
-            <div className="flex flex-col gap-2">
-              <Badge variant="outline">工具命名</Badge>
-              <div className="text-2xl font-semibold">91.2%</div>
-              <p className="text-sm text-muted-foreground">
-                operationId 完整且可生成稳定 MCP tool name。
-              </p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Badge variant="destructive">
-                <TriangleAlertIcon data-icon="inline-start" />
-                12 个风险项
-              </Badge>
-              <div className="text-2xl font-semibold">需处理</div>
-              <p className="text-sm text-muted-foreground">
-                主要集中在鉴权声明缺失和重复路径参数。
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      <section className="grid gap-4 xl:grid-cols-3">
+        <RankingCard items={serviceUsage} title="今日服务调用排行" />
+        <RankingCard items={toolUsage} title="今日工具调用排行" />
+        <RankingCard items={keyUsage} title="今日 Key 调用排行" />
       </section>
     </main>
+  )
+}
+
+function RankingCard({
+  items,
+  title,
+}: {
+  items: Array<{ count: string; meta: string; name: string }>
+  title: string
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {items.map((item, index) => (
+          <div
+            className="flex items-center gap-3 rounded-xl border bg-muted/20 p-3"
+            key={item.name}
+          >
+            <div className="w-5 shrink-0 text-sm font-medium text-muted-foreground">
+              {index + 1}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-medium">{item.name}</div>
+              <div className="truncate text-xs text-muted-foreground">{item.meta}</div>
+            </div>
+            <Badge
+              className="bg-[oklch(0.555_0.163_48.998_/_0.1)] text-[oklch(0.555_0.163_48.998)]"
+              variant="secondary"
+            >
+              {item.count}
+            </Badge>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   )
 }
